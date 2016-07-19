@@ -7,7 +7,7 @@ import random
 import urllib
 import urllib2
 import time
-from gcloud import datastore
+import aguri_conf
 
 # for sending images
 from PIL import Image
@@ -18,21 +18,9 @@ from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 import webapp2
 
-TOKEN = '190337691:AAEmrH-pVz_wImCfYpnFDRA4G12Jhx7X1Jk'
+#TOKEN = '190337691:AAEmrH-pVz_wImCfYpnFDRA4G12Jhx7X1Jk'
 
-BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
-
-#def createAguriTable():
-#   conn = sqlite3.connect('aguri_bot.db')
-#   c = conn.cursor()
-#   c.execute("CREATE TABLE IF NOT EXIST aguri_req (id, key, hash)")
-#   c.execute("CREATE TABLE IF NOT EXIST aguri_req_content (key, hash)")
-#   c.execute("CREATE TABLE IF NOT EXIST aguri_res_content (key, hash)")
-#   c.execute("CREATE TABLE IF NOT EXIST aguri_req_res (req_hash, res_hash)")
-#   conn.commit()
-#   conn.close
-
-#createAguriTable()
+#aguri_conf.base_url = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 # ================================
 
@@ -60,13 +48,13 @@ def getEnabled(chat_id):
 class MeHandler(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
-        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getMe'))))
+        self.response.write(json.dumps(json.load(urllib2.urlopen(aguri_conf.base_url + 'getMe'))))
 
 
 class GetUpdatesHandler(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
-        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getUpdates'))))
+        self.response.write(json.dumps(json.load(urllib2.urlopen(aguri_conf.base_url + 'getUpdates'))))
 
 
 class SetWebhookHandler(webapp2.RequestHandler):
@@ -74,7 +62,7 @@ class SetWebhookHandler(webapp2.RequestHandler):
         urlfetch.set_default_fetch_deadline(60)
         url = self.request.get('url')
         if url:
-            self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
+            self.response.write(json.dumps(json.load(urllib2.urlopen(aguri_conf.base_url + 'setWebhook', urllib.urlencode({'url': url})))))
 
 
 class WebhookHandler(webapp2.RequestHandler):
@@ -103,14 +91,14 @@ class WebhookHandler(webapp2.RequestHandler):
 
         def reply(msg=None, img=None):
             if msg:
-                resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
+                resp = urllib2.urlopen(aguri_conf.base_url + 'sendMessage', urllib.urlencode({
                     'chat_id': str(chat_id),
                     'text': msg.encode('utf-8'),
                     'disable_web_page_preview': 'true',
                     'reply_to_message_id': str(message_id),
                 })).read()
             elif img:
-                resp = multipart.post_multipart(BASE_URL + 'sendPhoto', [
+                resp = multipart.post_multipart(aguri_conf.base_url + 'sendPhoto', [
                     ('chat_id', str(chat_id)),
                     ('reply_to_message_id', str(message_id)),
                 ], [
