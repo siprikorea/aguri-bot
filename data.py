@@ -6,11 +6,11 @@ class Message(ndb.Model):
 
 
 class Question(ndb.Model):
-    message = ndb.StructedProperty(Message, repeated = TRUE)
+    message = ndb.StructuredProperty(Message, repeated = True)
 
 
 class Answer(ndb.Model):
-    message = ndb.StructedProperty(Message, repeated = TRUE)
+    message = ndb.StructuredProperty(Message, repeated = True)
 
 
 def AddQuestion(key, type, data):
@@ -25,12 +25,12 @@ def AddAnswer(key, type, data):
     answer.put()
 
 
-def GetQuestion(key)
+def GetQuestion(key):
     question = Question.get_by_id(key)
     return question.message
 
 
-def GetAnswer(key)
+def GetAnswer(key):
     answer = Answer.get_by_id(key)
     return answer.message
 
