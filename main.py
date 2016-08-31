@@ -1,15 +1,9 @@
-#-*- coding: utf-8 -*-
-
 import StringIO
 import json
 import logging
 import random
 import urllib
 import urllib2
-import time
-from config import config
-from data import Question
-from data import Answer
 
 # for sending images
 from PIL import Image
@@ -19,6 +13,11 @@ import multipart
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 import webapp2
+
+TOKEN = '190337691:AAEmrH-pVz_wImCfYpnFDRA4G12Jhx7X1Jk'
+
+BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
+
 
 # ================================
 
@@ -46,13 +45,13 @@ def getEnabled(chat_id):
 class MeHandler(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
-        self.response.write(json.dumps(json.load(urllib2.urlopen(config.base_url + 'getMe'))))
+        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getMe'))))
 
 
 class GetUpdatesHandler(webapp2.RequestHandler):
     def get(self):
         urlfetch.set_default_fetch_deadline(60)
-        self.response.write(json.dumps(json.load(urllib2.urlopen(config.base_url + 'getUpdates'))))
+        self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'getUpdates'))))
 
 
 class SetWebhookHandler(webapp2.RequestHandler):
@@ -60,7 +59,7 @@ class SetWebhookHandler(webapp2.RequestHandler):
         urlfetch.set_default_fetch_deadline(60)
         url = self.request.get('url')
         if url:
-            self.response.write(json.dumps(json.load(urllib2.urlopen(config.base_url + 'setWebhook', urllib.urlencode({'url': url})))))
+            self.response.write(json.dumps(json.load(urllib2.urlopen(BASE_URL + 'setWebhook', urllib.urlencode({'url': url})))))
 
 
 class WebhookHandler(webapp2.RequestHandler):
@@ -89,14 +88,14 @@ class WebhookHandler(webapp2.RequestHandler):
 
         def reply(msg=None, img=None):
             if msg:
-                resp = urllib2.urlopen(config.base_url + 'sendMessage', urllib.urlencode({
+                resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
                     'chat_id': str(chat_id),
                     'text': msg.encode('utf-8'),
                     'disable_web_page_preview': 'true',
                     'reply_to_message_id': str(message_id),
                 })).read()
             elif img:
-                resp = multipart.post_multipart(config.base_url + 'sendPhoto', [
+                resp = multipart.post_multipart(BASE_URL + 'sendPhoto', [
                     ('chat_id', str(chat_id)),
                     ('reply_to_message_id', str(message_id)),
                 ], [
@@ -111,10 +110,10 @@ class WebhookHandler(webapp2.RequestHandler):
 
         if text.startswith('/'):
             if text == '/start':
-                reply(u'봇이 시작 되었습니다')
+                reply('Bot enabled')
                 setEnabled(chat_id, True)
             elif text == '/stop':
-                reply(u'봇이 정지 되었습니다')
+                reply('Bot disabled')
                 setEnabled(chat_id, False)
             elif text == '/image':
                 img = Image.new('RGB', (512, 512))
@@ -124,38 +123,25 @@ class WebhookHandler(webapp2.RequestHandler):
                 output = StringIO.StringIO()
                 img.save(output, 'JPEG')
                 reply(img=output.getvalue())
-            elif text == '/help':
-                reply('/start /stop /image /help')
             else:
-                reply('Invalid commnad. Type help for help.')
+                reply('What command?')
 
         # CUSTOMIZE FROM HERE
 
+        elif 'who are you' in text:
+            reply('I am your father.')
+        elif 'what time' in text:
+            reply('Look at the clock.')
         else:
-            keys = text.split()
-
-            for key in keys:
-                AddQuestion(key, 'text', text)
-
-            if u'누구' in text:
-                reply(u'아구리 봇 입니다')
-            elif u'몇시' in text:
-                now = time.localtime()
-                now = u"%02d시 %02d분 %02d초 입니다" % (now.tm_hour, now.tm_min, now.tm_sec)
-                reply(now)
+            if getEnabled(chat_id):
+                reply('I don\'t know what you say.')
             else:
-                words = text.split()
-                #for word in words:
-                
-                if getEnabled(chat_id):
-                    reply(u'무슨 말인지 모르겠습니다')
-                else:
-                    logging.info('not enabled for chat_id {}'.format(chat_id))
-    
-    
-    app = webapp2.WSGIApplication([
-        ('/me', MeHandler),
-        ('/updates', GetUpdatesHandler),
-        ('/set_webhook', SetWebhookHandler),
-        ('/webhook', WebhookHandler),
-    ], debug=True)
+                logging.info('not enabled for chat_id {}'.format(chat_id))
+
+
+app = webapp2.WSGIApplication([
+    ('/me', MeHandler),
+    ('/updates', GetUpdatesHandler),
+    ('/set_webhook', SetWebhookHandler),
+    ('/webhook', WebhookHandler),
+], debug=True)
